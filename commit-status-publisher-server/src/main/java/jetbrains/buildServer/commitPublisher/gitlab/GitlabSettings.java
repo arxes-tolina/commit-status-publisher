@@ -1,47 +1,46 @@
-package jetbrains.buildServer.commitPublisher.stash;
+package jetbrains.buildServer.commitPublisher.gitlab;
 
-import jetbrains.buildServer.commitPublisher.CommitStatusPublisher;
+import jetbrains.buildServer.commitPublisher.CommitStatusPublisherSettings;
 import jetbrains.buildServer.commitPublisher.Constants;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.serverSide.WebLinks;
-import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import jetbrains.buildServer.commitPublisher.CommitStatusPublisherSettings;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public class StashSettings implements CommitStatusPublisherSettings {
+public class GitlabSettings implements CommitStatusPublisherSettings {
 
-  private final PluginDescriptor myDescriptor;
   private final WebLinks myLinks;
 
-  public StashSettings(@NotNull PluginDescriptor descriptor,
-                       @NotNull WebLinks links) {
-    myDescriptor = descriptor;
-    myLinks= links;
+  public GitlabSettings(@NotNull WebLinks links) {
+    myLinks = links;
   }
 
   @NotNull
+  @Override
   public String getId() {
-    return Constants.STASH_PUBLISHER_ID;
+    return Constants.GITLAB_PUBLISHER_ID;
   }
 
   @NotNull
+  @Override
   public String getName() {
-    return "Bitbucket Server (Atlassian Stash)";
+    return "GitLab";
   }
 
   @Nullable
+  @Override
   public String getEditSettingsUrl() {
-    return myDescriptor.getPluginResourcesPath("stash/stashSettings.jsp");
+    return "gitlab/gitlabSettings.jsp";
   }
 
   @Nullable
+  @Override
   public Map<String, String> getDefaultParameters() {
     return null;
   }
@@ -52,29 +51,39 @@ public class StashSettings implements CommitStatusPublisherSettings {
     return null;
   }
 
-  @Nullable
-  public CommitStatusPublisher createPublisher(@NotNull Map<String, String> params) {
-    return new StashPublisher(myLinks, params);
+  @NotNull
+  @Override
+  public GitlabPublisher createPublisher(@NotNull Map<String, String> params) {
+    return new GitlabPublisher(myLinks, params);
   }
 
   @NotNull
+  @Override
   public String describeParameters(@NotNull Map<String, String> params) {
-    StashPublisher voter = (StashPublisher) createPublisher(params);
-    return getName() + " " + voter.getBaseUrl();
+    String result = "Publish status to GitLab";
+    GitlabPublisher publisher = createPublisher(params);
+    String url = publisher.getApiUrl();
+    if (url != null)
+      result += " " + url;
+    return result;
   }
 
   @Nullable
+  @Override
   public PropertiesProcessor getParametersProcessor() {
     return new PropertiesProcessor() {
       public Collection<InvalidProperty> process(Map<String, String> params) {
         List<InvalidProperty> errors = new ArrayList<InvalidProperty>();
-        if (params.get(Constants.STASH_BASE_URL) == null)
-          errors.add(new InvalidProperty(Constants.STASH_BASE_URL, "must be specified"));
+        if (params.get(Constants.GITLAB_API_URL) == null)
+          errors.add(new InvalidProperty(Constants.GITLAB_API_URL, "must be specified"));
+        if (params.get(Constants.GITLAB_TOKEN) == null)
+          errors.add(new InvalidProperty(Constants.GITLAB_TOKEN, "must be specified"));
         return errors;
       }
     };
   }
 
+  @Override
   public boolean isEnabled() {
     return true;
   }
