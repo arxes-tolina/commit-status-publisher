@@ -98,7 +98,10 @@ public class GitlabPublisher extends BaseCommitStatusPublisher {
     HttpPost post = null;
     HttpResponse response = null;
     try {
-      String url = getApiUrl() + "/projects/" + repository.owner() + "%2F" + repository.repositoryName() + "/statuses/" + commit;
+    	// urlencode dots in owner / repo name, otherwise causing 404's while posting status
+      final String owner = repository.owner().replace(".", "%2E");
+			final String repositoryName = repository.repositoryName().replace(".", "%2E");
+			final String url = getApiUrl() + "/projects/" + owner + "%2F" + repositoryName + "/statuses/" + commit;
       LOG.debug("Request url: " + url + ", message: " + data);
       post = new HttpPost(url);
       post.addHeader("PRIVATE-TOKEN", getPrivateToken());
